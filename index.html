@@ -1695,70 +1695,77 @@ S Sreekanth,47048,Utukuru,2197,182197,Rajampeta
     employeeIdInput.value = selected.dataset.employeeId || '';
   });
 
-  document.getElementById('entryForm').addEventListener('submit', async e => {
+document.getElementById('entryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    // This line fixes the error - we now properly get the Submit button
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+
+    // Collect all form data (same as before)
     const formData = {
-      timestamp: new Date().toISOString(),
-      region: regionSelect.value,
-      sales_officer_name: salesOfficerSelect.value,
-      employee_id: employeeIdInput.value,
-      branch_code: branchCodeSelect.value,
-      branch_name: branchNameInput.value,
-      composite_code: compositeCodeInput.value,
-      regionField: regionFieldInput.value,
-      policy_entered_date: document.getElementById('policyEnteredDate').value,
-      application_number: document.getElementById('applicationNumber').value.trim(),
-      customer_name: document.getElementById('customerName').value.trim(),
-      mobile_number: document.getElementById('mobileNumber').value.trim(),
-      pan_number: document.getElementById('panNumber').value.trim(),
-      aadhar_number: document.getElementById('aadharNumber').value.trim(),
-      customer_account_number: document.getElementById('customerAccountNumber').value.trim(),
-      type_of_debit: document.getElementById('typeOfDebit').value,
-      insurance_premium_amount: document.getElementById('insurancePremiumAmount').value,
-      transaction_id: document.getElementById('transactionId').value.trim()
+        timestamp: new Date().toISOString(),
+        region: regionSelect.value,
+        sales_officer_name: salesOfficerSelect.value,
+        employee_id: employeeIdInput.value,
+        branch_code: branchCodeSelect.value,
+        branch_name: branchNameInput.value,
+        composite_code: compositeCodeInput.value,
+        regionField: regionFieldInput.value,
+        policy_entered_date: document.getElementById('policyEnteredDate').value,
+        application_number: document.getElementById('applicationNumber').value.trim(),
+        customer_name: document.getElementById('customerName').value.trim(),
+        mobile_number: document.getElementById('mobileNumber').value.trim(),
+        pan_number: document.getElementById('panNumber').value.trim().toUpperCase(),
+        aadhar_number: document.getElementById('aadharNumber').value.trim(),
+        customer_account_number: document.getElementById('customerAccountNumber').value.trim(),
+        type_of_debit: document.getElementById('typeOfDebit').value,
+        insurance_premium_amount: document.getElementById('insurancePremiumAmount').value,
+        transaction_id: document.getElementById('transactionId').value.trim()
     };
 
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaElUw5Leg52iV71sqzSeODwjY5PvAoBXa2J11vhz_2SxWZHp-CjeaJ108pD72YvLOZw/exec';
 
+    // Show submitting state
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    messageDiv.textContent = '';
+    messageDiv.classList.remove('error');
+
     try {
-  // Convert formData to URLSearchParams for better CORS compatibility
-  const params = new URLSearchParams();
-  Object.keys(formData).forEach(key => {
-    params.append(key, formData[key] || '');
-  });
+        const params = new URLSearchParams();
+        Object.keys(formData).forEach(key => {
+            params.append(key, formData[key] || '');
+        });
 
-    // Disable button only when user clicks Submit
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-  const response = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',  // Key fix: Allows cross-origin without reading response
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params
-  });
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: params
+        });
 
-  // With no-cors, we can't read response, but assume success if no error
-  messageDiv.textContent = '✅ Submission successful! Data saved to SUD MIS System.';
-  messageDiv.classList.remove('error');
-  
-  // Reset form
-  e.target.reset();
-  populateRegions();  // Re-init dropdowns
-  // Clear readonly fields
-  document.getElementById('branchName').value = '';
-  document.getElementById('compositeCode').value = '';
-  document.getElementById('regionField').value = '';
-  document.getElementById('employeeId').value = '';
-  
-} catch (error) {
-  console.error('Fetch Error:', error);  // Check browser console for details
-  messageDiv.textContent = '❌ Error submitting data. Please try again or check console.';
-  messageDiv.classList.add('error');
-}
-  });
+        // Success
+        messageDiv.textContent = 'Submission successful! Data saved to SUD MIS System.';
+        messageDiv.classList.remove('error');
+
+        // Reset form completely
+        e.target.reset();
+        branchNameInput.value = '';
+        compositeCodeInput.value = '';
+        regionFieldInput.value = '';
+        employeeIdInput.value = '';
+        populateRegions(); // Re-load regions
+
+    } catch (error) {
+        console.error('Submission failed:', error);
+        messageDiv.textContent = 'Failed! Check internet or contact admin.';
+        messageDiv.classList.add('error');
+    } finally {
+        // Always re-enable the button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
+});
 
   // Init dropdowns
   populateRegions();
